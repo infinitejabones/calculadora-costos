@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Costos Infinite - Jabones</title>
+    <link rel="manifest" href="/manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .mobile-input {
+            font-size: 16px !important;
+        }
+        
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-pink-50 to-pink-100 min-h-screen">
+    <!-- Header Sticky -->
+    <div class="sticky-header px-4 py-3 border-b border-pink-200">
+        <div class="text-center">
+            <h1 class="text-2xl font-bold text-gray-800">🧼 Calculadora Infinite</h1>
+            <p class="text-sm text-gray-500 mt-1">Calcula el precio de tus jabones</p>
+        </div>
+    </div>
+
+    <!-- Contenedor Principal de la App -->
+    <div class="p-4 pb-20">
+        <div id="auth-status" class="bg-pink-100 text-pink-800 text-center py-2 px-4 rounded-lg shadow-sm mb-4 text-xs font-medium" style="display: none;">
+            Iniciando sesión...
+        </div>
+
+        <div id="login-screen" class="p-4">
+            <div class="bg-white rounded-xl p-6 shadow-md mb-4 text-center animate-fade-in">
+                <h2 class="text-xl font-bold text-pink-700 mb-4">¡Bienvenido a la Calculadora Infinite!</h2>
+                <p class="text-gray-600 mb-6">Inicia sesión para guardar recetas ilimitadas y acceder desde cualquier dispositivo.</p>
+                <input type="email" id="login-email" placeholder="Correo electrónico" class="w-full p-3 border-2 border-pink-200 rounded-lg text-base mobile-input mb-4 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all">
+                <input type="password" id="login-password" placeholder="Contraseña" class="w-full p-3 border-2 border-pink-200 rounded-lg text-base mobile-input mb-4 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all">
+                
+                <button onclick="signIn()" class="w-full bg-pink-700 text-white font-semibold py-3 px-4 rounded-lg mb-2 hover:bg-pink-800 transition-colors">
+                    Iniciar sesión
+                </button>
+                <button onclick="signUp()" class="w-full text-pink-700 font-semibold py-3 px-4 rounded-lg border-2 border-pink-700 hover:bg-pink-100 transition-colors">
+                    Crear cuenta
+                </button>
+            </div>
+             <p class="text-center text-sm text-gray-500 mt-4">
+                <button onclick="continueAnonymously()" class="text-pink-600 hover:underline">Continuar sin cuenta (Límite de 2 recetas)</button>
+            </p>
+        </div>
+
+        <div id="app-content" class="hidden">
+            <!-- Nombre de la Receta -->
+            <div class="bg-white rounded-xl p-4 mb-4 shadow-md animate-fade-in">
+                <h2 class="text-lg font-semibold text-pink-700 mb-4">📝 Nombre de tu Receta</h2>
+                <input type="text" id="nombreReceta" placeholder="Ej: Jabón de Lavanda y Avena" class="w-full p-3 border-2 border-pink-200 rounded-lg text-base mobile-input focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all" style="background: #fef7ff;">
+                <p class="text-xs text-gray-400 mt-1">Este nombre aparecerá en tu historial para identificar la receta.</p>
+            </div>
+
+            <!-- Calculadora de Ingredientes -->
+            <div class="bg-white rounded-xl p-4 mb-4 shadow-md animate-fade-in">
+                <h2 class="text-lg font-semibold text-pink-700 mb-4">⚖️ Calculadora por Ingrediente</h2>
+                
+                <div class="mb-3">
+                    <label class="text-sm text-pink-700 block mb-1">Nombre del ingrediente</label>
+                    <input type="text" id="nombreInsumoCalc" placeholder="Ej: Aceite de coco" class="w-full p-3 border-2 border-pink-200 rounded-lg text-base mobile-input focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="text-sm text-pink-700 block mb-1">Precio pagado</label>
+                    <div class="flex items-center">
+                        <span class="p-3 bg-pink-100 border-2 border-pink-200 border-r-0 rounded-l-lg text-pink-700 font-medium">$</span>
+                        <input type="number" id="precioCompra" step="0.01" placeholder="50" class="flex-1 p-3 border-2 border-pink-200 rounded-r-lg text-base mobile-input focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="text-sm text-pink-700 block mb-1">Cantidad comprada</label>
+                    <div class="flex items-center">
+                        <input type="number" id="cantidadCompra" step="0.01" placeholder="10" class="flex-1 p-3 border-2 border-pink-200 rounded-l-lg text-base mobile-input focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all">
+                        <select id="unidadCompra" class="p-3 border-2 border-pink-200 rounded-r-lg bg-white text-base mobile-input">
+                            <option value="kg">kg</option>
+                            <option value="g">g</option>
+                            <option value="lb">lb</option>
+                            <option value="oz">oz</option>
+                            <option value="l">l</option>
+                            <option value="ml">ml</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="text-sm text-pink-700 block mb-1">Costo por gramo</label>
+                    <div class="bg-gray-100 p-3 rounded-lg text-sm text-gray-600 font-mono">
+                        <span id="costoPorGramo">$0.000000</span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="text-sm text-pink-700 block mb-1">Cantidad en receta</label>
+                    <div class="flex items-center">
+                        <input type="number" id="cantidadReceta" step="0.01" placeholder="20" class="flex-1 p-3 border-2 border-pink-200 rounded-l-lg text-base mobile-input focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all">
+                        <select id="unidadReceta" class="p-3 border-2 border-pink-200 rounded-r-lg bg-white text-base mobile-input">
+                            <option value="g">g</option>
+                            <option value="gotas">gotas</option>
+                            <option value="ml">ml</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="resultadoProporcion" class="animate-fade-in bg-pink-100 rounded-lg p-3 border border-pink-200 mb-3" style="display: none;">
+                    <div class="text-center">
+                        <span class="text-xl font-bold text-pink-700" id="costoCalculado">$0.00</span>
+                        <p class="text-sm text-gray-500 mt-2" id="detalleCalculo"></p>
+                    </div>
+                </div>
+                
+                <button type="button" onclick="agregarAlListado()" class="w-full bg-pink-700 text-white font-semibold py-3 px-4 rounded-lg border-none cursor-pointer text-base hover:bg-pink-800 transition-colors">
+                    ➕ Agregar a Lista de Insumos
+                </button>
+            </div>
+
+            <!-- Lista de Insumos -->
+            <div class="bg-white rounded-xl p-4 mb-4 shadow-md animate-fade-in">
+                <h2 class="text-lg font-semibold text-pink-700 mb-4">🧪 Lista de Insumos</h2>
+                
+                <div id="insumos-container" class="mb-3">
+                    <!-- Se poblará dinámicamente -->
+                </div>
+                
+                <button type="button" onclick="agregarInsumo()" class="text-pink-700 font-semibold text-sm bg-transparent border-none cursor-pointer hover:underline transition-colors">
+                    + Agregar insumo manual
+                </button>
+            </div>
+
+            <!-- Otros Costos -->
+            <div class="bg-white rounded-xl p-4 mb-4 shadow-md animate-fade-in">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">💰 Otros Costos</h2>
+                
+                <div class="mb-4">
+                    <label class="text-sm text-gray-700 block mb-1">👷‍♀️ Mano de Obra</label>
+                    <div class="flex items-center">
+                        <span class="p-3 bg-gray-100 border-2 border-gray-200 border-r-0 rounded-l-lg text-gray-500 font-medium">$</span>
+                        <input type="number" id="manoObra" step="0.01" placeholder="0.00" class="flex-1 p-3 border-2 border-gray-200 rounded-r-lg text-base mobile-input focus:ring-2 focus:ring-gray-400 focus:border-gray-400 transition-all">
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="text-sm text-gray-700 block mb-1">📦 Empaque</label>
+                    <div class="flex items-center">
+                        <span class="p-3 bg-gray-100 border-2 border-gray-200 border-r-0 rounded-l-lg text-gray-500 font-medium">$</span>
+                        <input type="number" id="empaque" step="0.01" placeholder="0.00" class="flex-1 p-3 border-2 border-gray-200 rounded-r-lg text-base mobile-input focus:ring-2 focus:ring-gray-400 focus:border-gray-400 transition-all">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="text-sm text-gray-700 block mb-1">👻 Gastos Invisibles (10% automático)</label>
+                    <div class="bg-gray-100 p-3 rounded-lg text-sm text-gray-600">
+                        <span id="gastosInvisibles">$0.00</span>
+                        <p class="text-xs text-gray-400 mt-1">Luz, gas, agua, desgaste de herramientas</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="flex gap-3 mb-4 animate-fade-in">
+                <button type="button" onclick="calcularPrecio()" class="flex-1 bg-gradient-to-br from-pink-600 to-pink-800 text-white font-bold py-4 px-6 rounded-xl border-none cursor-pointer text-lg shadow-md hover:shadow-lg transition-all">
+                    🧮 Calcular Precio Final
+                </button>
+                <button type="button" onclick="reiniciarCalculadora()" class="p-4 bg-gray-100 text-gray-600 font-semibold rounded-xl border-none cursor-pointer text-base shadow-md hover:bg-gray-200 transition-colors">
+                    🔄
+                </button>
+            </div>
+
+            <!-- Resultados -->
+            <div id="resultado" class="animate-fade-in">
+                <div class="bg-white rounded-xl shadow-md p-6 text-center text-gray-500">
+                    <div class="text-5xl mb-3">🧮</div>
+                    <p>Completa los costos y presiona calcular</p>
+                </div>
+            </div>
+
+            <!-- Historial -->
+            <div class="bg-white rounded-xl p-4 mt-4 shadow-md animate-fade-in">
+                <h3 class="font-semibold text-gray-800 mb-3">📋 Historial</h3>
+                <div id="historial" class="max-h-48 overflow-y-auto">
+                    <p class="text-gray-500 text-sm text-center py-4">No hay cálculos guardados.</p>
+                </div>
+                <button onclick="limpiarHistorial()" class="mt-3 text-red-600 font-semibold text-sm bg-transparent border-none cursor-pointer hover:underline transition-colors">
+                    🗑️ Limpiar historial
+                </button>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Modal de Mensaje y Venta -->
+    <div id="app-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-fade-in">
+        <div class="mt-3 text-center">
+          <h3 id="modal-title" class="text-lg leading-6 font-medium text-gray-900"></h3>
+          <div class="mt-2 px-7 py-3">
+            <p id="modal-message" class="text-sm text-gray-500"></p>
+          </div>
+          <div class="items-center px-4 py-3">
+            <button id="modal-close-btn" class="px-4 py-2 bg-pink-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-500">
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Venta -->
+    <div id="payment-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white animate-fade-in">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-pink-100 mb-4">
+                    <svg class="h-6 w-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm-8 4h.01M16 4.414V3.125a1.25 1.25 0 011.25-1.25h1.25a1.25 1.25 0 011.25 1.25V4.414M16 19.586V20.875a1.25 1.25 0 01-1.25 1.25H13.5a1.25 1.25 0 01-1.25-1.25V19.586M4.414 16H3.125A1.25 1.25 0 011.875 14.75V13.5a1.25 1.25 0 011.25-1.25H4.414" />
+                    </svg>
+                </div>
+                <h3 class="text-xl leading-6 font-bold text-gray-900">¡Desbloquea el plan completo!</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">
+                        Has alcanzado el límite de 2 recetas guardadas.
+                        Para guardar recetas ilimitadas y acceder a todas las funciones, ¡adquiere la versión completa!
+                    </p>
+                    <p class="text-3xl font-bold text-green-600 my-4">$50</p>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="buy-now-btn" onclick="buyNow()" class="px-4 py-2 bg-pink-600 text-white text-base font-bold rounded-md w-full shadow-sm hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-500">
+                        ¡Comprar ahora!
+                    </button>
+                    <button id="close-payment-modal" onclick="document.getElementById('payment-modal').classList.add('hidden')" class="mt-2 text-gray-500 hover:text-gray-700 font-semibold text-sm">
+                        No, gracias
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, addDoc, getDocs, onSnapshot, deleteDoc, setDoc, writeBatch, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Register the Service Worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registered! Scope:', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('Service Worker registration failed:', err);
+                    });
+            });
+        }
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        let userId = null;
+        let isProUser = false;
+        const HISTORIAL_COLLECTION_PATH = `/artifacts/${appId}/users/`;
+        const FREE_PLAN_LIMIT = 2; // Limite de recetas para el plan gratuito
+        let currentRecipeCount = 0;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                // Asume que los usuarios autenticados con email son "Pro Users"
+                isProUser = user.isAnonymous === false;
+                document.getElementById('auth-status').textContent = `Conectado. Tu ID de usuario es: ${userId}`;
+                document.getElementById('auth-status').style.display = 'block';
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-content').classList.remove('hidden');
+                loadHistorial();
+            } else {
+                userId = null;
+                document.getElementById('auth-status').style.display = 'none';
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('app-content').classList.add('hidden');
+            }
+        });
+
+        if (initialAuthToken) {
+            signInWithCustomToken(auth, initialAuthToken).catch((error) => {
+                console.error("Error signing in with custom token:", error);
+            });
+        }
+
+        // --- Funciones de Autenticación ---
+
+        async function signIn() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                showModal('Error de inicio de sesión', 'El correo electrónico o la contraseña son incorrectos. Por favor, intenta de nuevo.');
+                console.error("Error signing in:", error);
+            }
+        }
+
+        async function signUp() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                showModal('¡Cuenta creada!', 'Tu cuenta ha sido creada exitosamente. ¡Ya puedes guardar recetas ilimitadas!');
+            } catch (error) {
+                let errorMessage = 'Hubo un error al crear la cuenta. Por favor, intenta de nuevo.';
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMessage = 'Este correo electrónico ya está en uso. Por favor, inicia sesión o usa otro correo.';
+                } else if (error.code === 'auth/weak-password') {
+                    errorMessage = 'La contraseña debe tener al menos 6 caracteres.';
+                }
+                showModal('Error al crear la cuenta', errorMessage);
+                console.error("Error creating user:", error);
+            }
+        }
+
+        async function continueAnonymously() {
+            await signInAnonymously(auth);
+        }
+        
+        // --- Funciones de la app ---
+
+        function showModal(title, message) {
+            const modal = document.getElementById('app-modal');
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').innerHTML = message;
+            
+            const closeBtn = document.getElementById('modal-close-btn');
+            closeBtn.textContent = 'Cerrar';
+            closeBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+            closeBtn.classList.add('bg-pink-500', 'hover:bg-pink-600');
+            closeBtn.onclick = () => {
+                modal.classList.add('hidden');
+            };
+            modal.classList.remove('hidden');
+        }
+
+        function showPaymentModal() {
+            document.getElementById('payment-modal').classList.remove('hidden');
+        }
+
+        function buyNow() {
+            // Reemplaza 'YOUR_HOTMART_LINK' con el enlace de pago de Hotmart
+            window.location.href = 'YOUR_HOTMART_LINK';
+        }
+
+        function actualizarGastosInvisibles() {
+            const insumosInputs = document.querySelectorAll('#insumos-container input[type="number"]');
+            let totalInsumos = 0;
+            insumosInputs.forEach(input => {
+                totalInsumos += parseFloat(input.value) || 0;
+            });
+            const gastosInvisibles = totalInsumos * 0.10;
+            document.getElementById('gastosInvisibles').textContent = `$${gastosInvisibles.toFixed(2)}`;
+        }
+
+        function calcularProporcion() {
+            const precioCompra = parseFloat(document.getElementById('precioCompra').value) || 0;
+            const cantidadCompra = parseFloat(document.getElementById('cantidadCompra').value) || 0;
+            const unidadCompra = document.getElementById('unidadCompra').value;
+            const cantidadReceta = parseFloat(document.getElementById('cantidadReceta').value) || 0;
+            const unidadReceta = document.getElementById('unidadReceta').value;
+            
+            const resultadoProporcionDiv = document.getElementById('resultadoProporcion');
+            resultadoProporcionDiv.style.display = 'none';
+
+            if (precioCompra === 0 || cantidadCompra === 0) {
+                document.getElementById('costoPorGramo').textContent = '$0.000000';
+                return;
+            }
+            
+            let cantidadCompraEnUnidadBase = 0;
+            let unidadBase = 'g';
+            switch(unidadCompra) {
+                case 'kg': cantidadCompraEnUnidadBase = cantidadCompra * 1000; break;
+                case 'g': cantidadCompraEnUnidadBase = cantidadCompra; break;
+                case 'lb': cantidadCompraEnUnidadBase = cantidadCompra * 453.592; break;
+                case 'oz': cantidadCompraEnUnidadBase = cantidadCompra * 28.3495; break;
+                case 'l': cantidadCompraEnUnidadBase = cantidadCompra * 1000; unidadBase = 'ml'; break;
+                case 'ml': cantidadCompraEnUnidadBase = cantidadCompra; unidadBase = 'ml'; break;
+            }
+            
+            const precioPorUnidadBase = precioCompra / cantidadCompraEnUnidadBase;
+            document.getElementById('costoPorGramo').textContent = `$${precioPorUnidadBase.toFixed(6)} por ${unidadBase}`;
+            
+            if (cantidadReceta > 0) {
+                let cantidadRecetaEnUnidadBase = 0;
+                switch(unidadReceta) {
+                    case 'g': cantidadRecetaEnUnidadBase = cantidadReceta; break;
+                    case 'ml': cantidadRecetaEnUnidadBase = cantidadReceta; break;
+                    case 'gotas': 
+                        cantidadRecetaEnUnidadBase = cantidadReceta / 20; 
+                        break;
+                }
+                
+                const costoTotal = precioPorUnidadBase * cantidadRecetaEnUnidadBase;
+                
+                document.getElementById('costoCalculado').textContent = `$${costoTotal.toFixed(4)}`;
+                
+                let textoConversion = unidadReceta === 'gotas' ? 
+                    `<div class="mt-1">💧 Conversión: <strong>${cantidadReceta} gotas = ${cantidadRecetaEnUnidadBase.toFixed(2)} ml</strong></div>` : '';
+                
+                document.getElementById('detalleCalculo').innerHTML = `
+                    <div class="text-xs text-gray-500">
+                        <div>🛒 Compraste: <strong>$${precioCompra}</strong> por <strong>${cantidadCompra} ${unidadCompra}</strong></div>
+                        <div>💰 Costo por ${unidadBase}: <strong>$${precioPorUnidadBase.toFixed(6)}</strong></div>
+                        ${textoConversion}
+                        <div>📏 Tu receta: <strong>${cantidadReceta} ${unidadReceta}</strong></div>
+                    </div>`;
+                
+                resultadoProporcionDiv.style.display = 'block';
+            }
+        }
+        
+        function agregarAlListado() {
+            const nombre = document.getElementById('nombreInsumoCalc').value.trim();
+            const costoCalculadoStr = document.getElementById('costoCalculado').textContent.replace('$', '');
+            const costoCalculado = parseFloat(costoCalculadoStr);
+            
+            if (!nombre || isNaN(costoCalculado) || costoCalculado === 0) {
+                showModal('Error', 'Primero calcula el costo del ingrediente.');
+                return;
+            }
+            
+            const container = document.getElementById('insumos-container');
+            const nuevoInsumo = document.createElement('div');
+            nuevoInsumo.className = 'mb-2 p-2 bg-green-50 rounded-lg border border-green-200 animate-fade-in';
+            nuevoInsumo.innerHTML = `
+                <div class="flex justify-between items-center mb-1">
+                    <input type="text" value="${nombre}" class="flex-1 p-2 bg-transparent text-gray-800 font-medium mobile-input border-none focus:outline-none" readonly>
+                    <button type="button" onclick="this.closest('div.bg-green-50').remove(); actualizarGastosInvisibles();" class="p-1 text-red-600 hover:text-red-800 transition-colors">✕</button>
+                </div>
+                <div class="flex items-center">
+                    <span class="text-sm font-bold text-green-700">$</span>
+                    <input type="number" step="0.01" value="${costoCalculado.toFixed(2)}" class="flex-1 p-2 bg-transparent text-gray-800 mobile-input border-none focus:outline-none" readonly>
+                </div>
+            `;
+            container.appendChild(nuevoInsumo);
+            
+            document.getElementById('nombreInsumoCalc').value = '';
+            document.getElementById('precioCompra').value = '';
+            document.getElementById('cantidadCompra').value = '';
+            document.getElementById('cantidadReceta').value = '';
+            document.getElementById('costoPorGramo').textContent = '$0.000000 por g';
+            document.getElementById('resultadoProporcion').style.display = 'none';
+
+            actualizarGastosInvisibles();
+        }
+
+        function agregarInsumo() {
+            const container = document.getElementById('insumos-container');
+            const nuevoInsumo = document.createElement('div');
+            nuevoInsumo.className = 'mb-2 p-2 bg-white rounded-lg border border-gray-200 animate-fade-in';
+            nuevoInsumo.innerHTML = `
+                <div class="flex justify-between items-center mb-1">
+                    <input type="text" placeholder="Nombre del insumo" class="flex-1 p-2 bg-transparent text-gray-800 font-medium mobile-input border-none focus:outline-none focus:ring-1 focus:ring-gray-300 rounded-md">
+                    <button type="button" onclick="this.closest('div.bg-white').remove(); actualizarGastosInvisibles();" class="p-1 text-red-600 hover:text-red-800 transition-colors">✕</button>
+                </div>
+                <div class="flex items-center">
+                    <span class="p-2 bg-gray-100 border border-gray-200 rounded-l-lg text-gray-500">$</span>
+                    <input type="number" step="0.01" placeholder="0.00" oninput="actualizarGastosInvisibles()" class="flex-1 p-2 border-2 border-gray-200 rounded-r-lg text-gray-800 mobile-input focus:ring-2 focus:ring-gray-400 focus:border-gray-400 transition-all">
+                </div>
+            `;
+            container.appendChild(nuevoInsumo);
+        }
+
+        async function calcularPrecio() {
+            if (!userId) {
+                console.error("User not authenticated.");
+                return;
+            }
+
+            if (!isProUser && currentRecipeCount >= FREE_PLAN_LIMIT) {
+                showPaymentModal();
+                return;
+            }
+
+            const insumosInputs = document.querySelectorAll('#insumos-container input[type="number"]');
+            let totalInsumos = 0;
+            const detalleInsumos = [];
+            
+            insumosInputs.forEach(input => {
+                const valor = parseFloat(input.value) || 0;
+                if (valor > 0) {
+                    const nombreInput = input.closest('div').previousElementSibling.querySelector('input');
+                    const nombre = nombreInput ? nombreInput.value.trim() || 'Insumo sin nombre' : 'Insumo manual';
+                    totalInsumos += valor;
+                    detalleInsumos.push({nombre: nombre, costo: valor});
+                }
+            });
+
+            const manoObra = parseFloat(document.getElementById('manoObra').value) || 0;
+            const empaque = parseFloat(document.getElementById('empaque').value) || 0;
+            const gastosInvisibles = totalInsumos * 0.10;
+            
+            const costoTotal = totalInsumos + manoObra + empaque + gastosInvisibles;
+            
+            const calculo = {
+                fecha: new Date().toISOString(),
+                nombreReceta: document.getElementById('nombreReceta').value.trim() || 'Receta sin nombre',
+                costoTotal: costoTotal,
+                gastosInvisibles: gastosInvisibles,
+                detalleInsumos: detalleInsumos,
+                manoObra: manoObra,
+                empaque: empaque
+            };
+
+            await guardarEnHistorial(calculo);
+            mostrarResultado(calculo);
+        }
+
+        function mostrarResultado(datos) {
+            const resultadoDiv = document.getElementById('resultado');
+            const precioMinimo = datos.costoTotal * 2;
+            const precioRecomendado = datos.costoTotal * 3;
+            
+            resultadoDiv.innerHTML = `
+                <div class="bg-white rounded-xl shadow-md p-4 animate-fade-in">
+                    <div class="text-center mb-4">
+                        <div class="text-3xl sm:text-4xl font-bold text-pink-700 mb-2">$${datos.costoTotal.toFixed(2)}</div>
+                        <p class="text-pink-700 font-semibold">Costo Total de Producción</p>
+                    </div>
+                    
+                    <div class="mb-4 text-sm">
+                        <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                            <span class="text-gray-500">💧 Insumos:</span>
+                            <span class="font-semibold">$${datos.detalleInsumos.reduce((sum, item) => sum + item.costo, 0).toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                            <span class="text-gray-500">👷‍♀️ Mano de obra:</span>
+                            <span class="font-semibold">$${datos.manoObra.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                            <span class="text-gray-500">📦 Empaque:</span>
+                            <span class="font-semibold">$${datos.empaque.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                            <span class="text-gray-500">👻 Gastos invisibles:</span>
+                            <span class="font-semibold">$${datos.gastosInvisibles.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-pink-100 rounded-lg p-4">
+                        <h4 class="font-bold text-pink-700 mb-3 text-center">💵 Precios de Venta</h4>
+                        <div class="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm mb-3">
+                            <span class="text-pink-700 font-semibold text-sm">🔥 Mínimo (×2):</span>
+                            <span class="font-bold text-pink-700 text-lg sm:text-xl">$${precioMinimo.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
+                            <span class="text-pink-700 font-semibold text-sm">⭐ Recomendado (×3):</span>
+                            <span class="font-bold text-pink-700 text-xl sm:text-2xl">$${precioRecomendado.toFixed(2)}</span>
+                        </div>
+                        <p class="text-xs text-gray-500 text-center mt-2">Mínimo: 100% ganancia | Recomendado: 200% ganancia</p>
+                    </div>
+
+                    <div class="mt-4 text-center">
+                        <button onclick="reiniciarCalculadora()" class="bg-green-600 text-white font-semibold py-3 px-6 rounded-lg border-none cursor-pointer text-base shadow-md hover:bg-green-700 transition-colors">
+                            🆕 Calcular Nueva Receta
+                        </button>
+                    </div>
+                </div>
+            `;
+            resultadoDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        async function guardarEnHistorial(calculo) {
+            if (!userId) {
+                console.error("User ID not available. Cannot save to Firestore.");
+                return;
+            }
+            try {
+                const historialRef = collection(db, `${HISTORIAL_COLLECTION_PATH}${userId}/calculator_recipes`);
+                await addDoc(historialRef, calculo);
+                console.log("Document successfully written!");
+            } catch (e) {
+                console.error("Error adding document: ", e);
+            }
+        }
+
+        function loadHistorial() {
+            if (!userId) return;
+
+            const historialRef = collection(db, `${HISTORIAL_COLLECTION_PATH}${userId}/calculator_recipes`);
+            onSnapshot(historialRef, (snapshot) => {
+                let historialData = [];
+                snapshot.forEach(doc => {
+                    historialData.unshift({ ...doc.data(), id: doc.id });
+                });
+                currentRecipeCount = historialData.length;
+                mostrarHistorial(historialData);
+            });
+        }
+        
+        function mostrarHistorial(historialData) {
+            const historialDiv = document.getElementById('historial');
+            if (historialData.length === 0) {
+                historialDiv.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">No hay cálculos guardados.</p>';
+                return;
+            }
+
+            historialDiv.innerHTML = historialData.map((calculo, index) => {
+                return `
+                    <div class="bg-gray-50 rounded-lg p-3 text-sm mb-2 cursor-pointer border border-gray-200 hover:bg-gray-100 transition-colors" onclick="mostrarDetalleHistorial('${calculo.id}')">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-semibold text-pink-700 text-sm">🧼 ${calculo.nombreReceta || 'Receta sin nombre'}</span>
+                            <span class="font-bold text-green-600 text-base">$${calculo.costoTotal.toFixed(2)}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-500 text-xs">📅 ${new Date(calculo.fecha).toLocaleString()}</span>
+                            <span class="text-gray-500 text-xs">👆 Toca para ver detalles</span>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        async function limpiarHistorial() {
+            showModal('Confirmación', '¿Estás seguro de que quieres limpiar todo el historial?');
+            const confirmBtn = document.getElementById('modal-close-btn');
+            confirmBtn.onclick = async () => {
+                const modal = document.getElementById('app-modal');
+                modal.classList.add('hidden');
+                if (!userId) return;
+                try {
+                    const historialRef = collection(db, `${HISTORIAL_COLLECTION_PATH}${userId}/calculator_recipes`);
+                    const querySnapshot = await getDocs(historialRef);
+                    const batch = writeBatch(db);
+                    querySnapshot.forEach((doc) => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+                    console.log("Historial successfully cleared!");
+                } catch (e) {
+                    console.error("Error clearing historial: ", e);
+                }
+            };
+        }
+
+        async function mostrarDetalleHistorial(docId) {
+            if (!userId) return;
+            const historialRef = collection(db, `${HISTORIAL_COLLECTION_PATH}${userId}/calculator_recipes`);
+            const q = query(historialRef);
+            const querySnapshot = await getDocs(q);
+            let calculo = null;
+            querySnapshot.forEach((doc) => {
+                if(doc.id === docId){
+                    calculo = doc.data();
+                }
+            });
+            if (!calculo) {
+                console.error("Calculation not found.");
+                return;
+            }
+            
+            let detalleInsumosHtml = '';
+            if (calculo.detalleInsumos && calculo.detalleInsumos.length > 0) {
+                detalleInsumosHtml = `
+                    <p class="font-bold mt-2">📋 Insumos utilizados:</p>
+                    <ul class="list-disc list-inside text-gray-600 text-sm ml-2">
+                        ${calculo.detalleInsumos.map(insumo => `<li>${insumo.nombre}: $${insumo.costo.toFixed(2)}</li>`).join('')}
+                    </ul>`;
+            }
+
+            showModal('Detalles de ' + calculo.nombreReceta, `
+                <div class="text-left text-sm">
+                    <p><strong>Fecha:</strong> ${new Date(calculo.fecha).toLocaleString()}</p>
+                    <p><strong>Costo Total:</strong> $${calculo.costoTotal.toFixed(2)}</p>
+                    ${detalleInsumosHtml}
+                    <div class="text-xs text-gray-400 mt-2">
+                        <p>Mano de obra: $${(calculo.manoObra || 0).toFixed(2)}</p>
+                        <p>Empaque: $${(calculo.empaque || 0).toFixed(2)}</p>
+                        <p>Gastos invisibles: $${(calculo.gastosInvisibles || 0).toFixed(2)}</p>
+                    </div>
+                </div>
+            `);
+        }
+
+        function reiniciarCalculadora() {
+            showModal('Confirmación', '¿Quieres limpiar todos los campos para calcular una nueva receta?');
+            const confirmBtn = document.getElementById('modal-close-btn');
+            confirmBtn.onclick = () => {
+                const modal = document.getElementById('app-modal');
+                modal.classList.add('hidden');
+                document.getElementById('nombreReceta').value = '';
+                document.getElementById('nombreInsumoCalc').value = '';
+                document.getElementById('precioCompra').value = '';
+                document.getElementById('cantidadCompra').value = '';
+                document.getElementById('cantidadReceta').value = '';
+                document.getElementById('unidadCompra').selectedIndex = 0;
+                document.getElementById('unidadReceta').selectedIndex = 0;
+                document.getElementById('costoPorGramo').textContent = '$0.000000 por g';
+                document.getElementById('resultadoProporcion').style.display = 'none';
+                document.getElementById('manoObra').value = '';
+                document.getElementById('empaque').value = '';
+                document.getElementById('gastosInvisibles').textContent = '$0.00';
+                
+                const container = document.getElementById('insumos-container');
+                container.innerHTML = '';
+                
+                document.getElementById('resultado').innerHTML = `
+                    <div class="bg-white rounded-xl shadow-md p-6 text-center text-gray-500">
+                        <div class="text-5xl mb-3">🧮</div>
+                        <p>Completa los costos y presiona calcular</p>
+                    </div>
+                `;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+        }
+    </script>
+</body>
+</html>
